@@ -2,7 +2,7 @@
 load the cuda module:
 $ module load cuda11/11.0
 to compile: 
-$ nvcc -o ColorTransformation_1Kernel ColorTransformation_3Kernel.cu
+$ nvcc -o ColorTransformation_3Kernel ColorTransformation_3Kernel.cu
 make sure include stb_image.h, stb_image_write.h in the build directory
 to execute: 
 $ ./ColorTransformation_3Kernel <input.jpg> <CI_output.jpg> <Grayscal_output.jpg> <Ucomponent_output.jpg>
