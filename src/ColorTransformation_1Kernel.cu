@@ -1,3 +1,15 @@
+/*
+load the cuda module:
+$ module load cuda11/11.0
+to compile: 
+$ nvcc -o ColorTransformation_1Kernel ColorTransformation_1Kernel.cu
+make sure include stb_image.h, stb_image_write.h in the build directory
+to execute: 
+$ ./ColorTransformation_1Kernel <input.jpg> <CI_output.jpg> <Grayscal_output.jpg> <Ucomponent_output.jpg>
+example: $ ./ColorTransformation plt4.jpg CI.jpg Grayscale.jpg UComponent.jpg
+
+*/
+
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
