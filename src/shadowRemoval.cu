@@ -8,6 +8,46 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+__global__ void sumAverageChannel(unsigned char* input, unsigned char* originalImg, unsigned char* output, int width, int height)
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+
+    if (x < width && y < height) {
+        int pixelIndex = y * width + x;
+        int rgbIndex = pixelIndex * 3;
+
+        float R = input[rgbIndex];
+        float G = input[rgbIndex + 1];
+        float B = input[rgbIndex + 2];
+
+        outputU[pixelIndex] = static_cast<unsigned char>(128 + (-0.147 * R - 0.289 * G + 0.436 * B));
+    }
+}
+
+__global__ void Erosion(unsigned char * inputImg, unsigned char* outImg, int width, int height, int strel) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if ( y < height || x < width){
+
+        unsigned int start_i = max(y - strel, 0);
+        unsigned int end_i = min(height - 1, y + strel);
+        unsigned int start_j = max(x - strel, 0);
+        unsigned int end_j = min(width - 1, x + strel);
+        int value = 255;
+        for (int i = start_i; i <= end_i; i++) {
+            for (int j = start_j; j <= end_j; j++) {
+                value = min(value, inputImg[i * width + j]);
+            }
+        }
+    outImg[y * width + x] = value;
+
+    }
+}
+
+
+
 __global__ void ColorTransformation(unsigned char* input, unsigned char* outputColorInvariance, unsigned char* outputGrayscale, unsigned char* outputU, int width, int height) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -127,6 +167,23 @@ int numBlocks = (width * height + threadsPerBlock - 1) / threadsPerBlock;
 
 // Launch histogram kernel for grayscale image
 computeHistogram<<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_grayscaleImage, d_histogram, width * height);
+
+// Configure Erosion Kernel
+    // Allocate memory for input image (We will take the gray mask)
+        // Do this for sahdow and light mask. 1-mask is the light mask.
+    unsigned char* d_erodedMaskShadow;
+    unsigned char* d_erodedMaskLight;
+    // Allocate input 
+        // Cuda host to device copy of the input mask.
+    // Allocate output
+    cudaMalloc((void**)&d_erodedMaskShadow, grayscaleSize * sizeof(unsigned char));
+    cudaMalloc((void**)&d_erodedMaskLight, grayscaleSize * sizeof(unsigned char));
+    dim3 erodeBlock(32, 32);
+    dim3 erodeGrid(ceil((float)width/erodeBlock.x), ceil((float)height / block.y));
+
+    Erosion<<<erodeGrid, erodeBlock>>>(MASK, d_erodedMaskShadow, width, height, 2)
+    //finish erases
+
 
 // Copy histogram back to host
 unsigned int* histogram = new unsigned int[NUM_BINS];
