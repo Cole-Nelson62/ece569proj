@@ -116,6 +116,21 @@ int main(int argc, char* argv[]) {
     // Launch the combined kernel
     ColorTransformation<<<gridDim, blockDim>>>(d_inputImage, d_colorInvarianceImage, d_grayscaleImage, d_UComponentImage, width, height);
 
+    // Allocate memory for output images
+    unsigned char* colorInvarianceImage = new unsigned char[imageSize];
+    unsigned char* grayscaleImage = new unsigned char[grayscaleSize];
+    unsigned char* UComponentImage = new unsigned char[grayscaleSize];
+
+    // Copy the converted images back to host
+    cudaMemcpy(colorInvarianceImage, d_colorInvarianceImage, imageSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(grayscaleImage, d_grayscaleImage, grayscaleSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(UComponentImage, d_UComponentImage, grayscaleSize, cudaMemcpyDeviceToHost);
+
+    // Save the output images
+    stbi_write_jpg(colorInvarianceOutputPath, width, height, 3, colorInvarianceImage, 100);
+    stbi_write_jpg(grayscaleOutputPath, width, height, 1, grayscaleImage, 100);
+    stbi_write_jpg(UComponentOutputPath, width, height, 1, UComponentImage, 100);
+
     // Allocate memory for the histogram
 unsigned int* d_histogram;
 cudaMalloc((void**)&d_histogram, NUM_BINS * sizeof(unsigned int));
@@ -138,20 +153,7 @@ cudaMemcpy(histogram, d_histogram, NUM_BINS * sizeof(unsigned int), cudaMemcpyDe
         if ((i + 1) % 16 == 0) printf("\n");
     }
     printf("\n");
-    // Allocate memory for output images
-    unsigned char* colorInvarianceImage = new unsigned char[imageSize];
-    unsigned char* grayscaleImage = new unsigned char[grayscaleSize];
-    unsigned char* UComponentImage = new unsigned char[grayscaleSize];
-
-    // Copy the converted images back to host
-    cudaMemcpy(colorInvarianceImage, d_colorInvarianceImage, imageSize, cudaMemcpyDeviceToHost);
-    cudaMemcpy(grayscaleImage, d_grayscaleImage, grayscaleSize, cudaMemcpyDeviceToHost);
-    cudaMemcpy(UComponentImage, d_UComponentImage, grayscaleSize, cudaMemcpyDeviceToHost);
-
-    // Save the output images
-    stbi_write_jpg(colorInvarianceOutputPath, width, height, 3, colorInvarianceImage, 100);
-    stbi_write_jpg(grayscaleOutputPath, width, height, 1, grayscaleImage, 100);
-    stbi_write_jpg(UComponentOutputPath, width, height, 1, UComponentImage, 100);
+    
 
     // Cleanup
     stbi_image_free(inputImage);
