@@ -12,7 +12,7 @@ __global__ void sumAverageChannel(unsigned char* input, unsigned char* originalI
         float G = input[rgbIndex + 1];
         float B = input[rgbIndex + 2];
 
-        outputU[pixelIndex] = static_cast<unsigned char>(128 + (-0.147 * R - 0.289 * G + 0.436 * B));
+        //outputU[pixelIndex] = static_cast<unsigned char>(128 + (-0.147 * R - 0.289 * G + 0.436 * B));
     }
 }
 

@@ -1,3 +1,4 @@
+/*
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
@@ -7,7 +8,7 @@
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-
+*/
 
 __global__ void ColorTransformation(unsigned char* input, unsigned char* outputColorInvariance, unsigned char* outputGrayscale, unsigned char* outputU, int width, int height) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -71,6 +72,7 @@ __global__ void findOtsuThresholding(){
 __global__ void binarizeImage(){
 // applying threshold to get the final binaty image
 }
+/*
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <inputImagePath> <colorInvarianceOutputPath> <grayscaleOutputPath> <UComponentOutputPath>" << std::endl;
@@ -186,4 +188,4 @@ cudaMemcpy(histogram, d_histogram, NUM_BINS * sizeof(unsigned int), cudaMemcpyDe
 
     return 0;
 }
-
+*/
