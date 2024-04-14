@@ -72,6 +72,53 @@ __global__ void findOtsuThresholding(){
 __global__ void binarizeImage(){
 // applying threshold to get the final binaty image
 }
+
+__global__ void calculateOtsuThreshold(unsigned char* histogram, int imageSize, unsigned char* threshold) {
+    __shared__ float cache[256];
+
+    int index = threadIdx.x;
+
+    float sum = 0.0f;
+    for (int i = 0; i < 256; i++) {
+        sum += i * histogram[i];
+    }
+
+    float sumB = 0.0f;
+    float wB = 0.0f;
+    float wF = 0.0f;
+    float varMax = 0.0f;
+
+    if (index < 256) {
+        for (int t = 0; t < 256; t++) {
+            wB += histogram[t];
+            if (wB == 0) continue;
+            wF = totalPixels - wB;
+            if (wF == 0) break;
+            sumB += t * histogram[t];
+            float mB = sumB / wB;
+            float mF = (sum - sumB) / wF;
+            float varBetween = wB * wF * (mB - mF) * (mB - mF);
+            if (varBetween > varMax) {
+                varMax = varBetween;
+                threshold[0] = t;
+            }
+        }
+    }
+}
+
+
+__global__ void generateMask(const unsigned char *image, unsigned char *mask, const float *cdf, int width, int height, unsigned char* threshold) {
+    // Generate grayscale mask based on thresholding
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    
+    if (x < width && y < height) {
+        int intensity = image[y * width + x];
+        mask[y * width + x] = (cdf[intensity] > threshold) ? 255 : 0;
+    }
+}
+
+
 /*
 int main(int argc, char* argv[]) {
     if (argc < 2) {

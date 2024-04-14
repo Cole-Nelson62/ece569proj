@@ -42,3 +42,29 @@ date
 ###/usr/bin/time mpirun -np 1 
 ./DeviceQuery_Solution > devicequery_output.txt
 date
+
+
+
+hw_path=~nelso680/ece569/Assignment3/build
+
+cd $hw_path
+###
+PATHS[0]=$hw_path/MatrixMultiplication/Dataset/0;
+PATHS[1]=$hw_path/MatrixMultiplication/Dataset/1;
+PATHS[2]=$hw_path/MatrixMultiplication/Dataset/2;
+PATHS[3]=$hw_path/MatrixMultiplication/Dataset/3;
+PATHS[4]=$hw_path/MatrixMultiplication/Dataset/4;
+PATHS[5]=$hw_path/MatrixMultiplication/Dataset/5;
+PATHS[6]=$hw_path/MatrixMultiplication/Dataset/6;
+PATHS[7]=$hw_path/MatrixMultiplication/Dataset/7;
+PATHS[8]=$hw_path/MatrixMultiplication/Dataset/8;
+PATHS[9]=$hw_path/MatrixMultiplication/Dataset/9;
+
+
+count=0
+for i in ${PATHS[@]}
+do
+   file=output$((count)).txt
+   ./BasicMatrixMultiplication_Solution -e $i/output.raw -i $i/input0.raw,$i/input1.raw -t matrix > BasicMatrixMultiplication_output/$file
+ count=$((count+1))
+done
