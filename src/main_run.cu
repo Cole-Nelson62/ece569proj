@@ -58,6 +58,7 @@ int main(int argc, char* argv[]) {
 
     int width, height, channels;
     unsigned char* inputImage = stbi_load(inputImagePath, &width, &height, &channels, 0);
+     int Mask_Width;
 
     if (inputImage == NULL) {
         std::cerr << "Error loading image: " << inputImagePath << std::endl;
@@ -72,11 +73,10 @@ int main(int argc, char* argv[]) {
 
     cudaEventRecord(atotalStartEvent, 0);
 
-    int Mask_Width =  5;
     int imageSize = width * height * channels;
     int grayscaleSize = width * height;
 
-    unsigned char *d_inputImage, *d_colorInvarianceImage, *d_grayscaleImage, *d_UComponentImage, *d_GreyScaleMask,*d_YUVMask;
+    unsigned char *d_inputImage, *d_colorInvarianceImage, *d_grayscaleImage, *d_UComponentImage, *d_GreyScaleMask, *d_YUVMask, *d_ConvoOutput;
     unsigned char *d_greyscalethreshold, *d_yuvthreshold;
 
     wbTime_start(GPU, "Copying input memory to the GPU.");
@@ -85,6 +85,8 @@ int main(int argc, char* argv[]) {
     cudaMalloc((void**)&d_colorInvarianceImage, imageSize * sizeof(unsigned char)); // 3 channels
     cudaMalloc((void**)&d_grayscaleImage, grayscaleSize * sizeof(unsigned char)); // Single channel
     cudaMalloc((void**)&d_UComponentImage, grayscaleSize * sizeof(unsigned char)); // U component
+    //cudaMalloc((void**)&d_UComponentImage, grayscaleSize * sizeof(unsigned char)); // U component
+    cudaMalloc((void**)&d_ConvoOutput, grayscaleSize * sizeof(unsigned char)); // U component
 
     cudaMalloc((void**)&d_GreyScaleMask, grayscaleSize * sizeof(unsigned char)); // greymask 
     cudaMalloc((void**)&d_YUVMask, grayscaleSize * sizeof(unsigned char)); // YUV Mask
@@ -96,7 +98,6 @@ int main(int argc, char* argv[]) {
     cudaEventRecord(astartEvent, 0);
     // Launch the combined kernel
     ColorTransformation<<<gridDim, blockDim>>>(d_inputImage, d_colorInvarianceImage, d_grayscaleImage, d_UComponentImage, width, height);
-
 
     cudaEventRecord(astopEvent, 0);
     cudaEventSynchronize(astopEvent);
@@ -129,10 +130,10 @@ int main(int argc, char* argv[]) {
     printf("Total time for Proccess 2 Otsu (ms) %f \n",aelapsedTime);
     printf("\n");
 
-    // for proccess 3
+    // for proccess 3 convolution
     cudaEventRecord(astartEvent, 0);
-
-
+    Mask_Width =  11;
+    convolution_basic_kernel<<<gridDim, blockDim>>>(d_UComponentImage, d_YUVMask, d_ConvoOutput, Mask_Width, width, height) ;
 
     cudaEventRecord(astopEvent, 0);
     cudaEventSynchronize(astopEvent);
@@ -219,6 +220,7 @@ cudaMemcpy(histogram, d_histogram, NUM_BINS * sizeof(unsigned int), cudaMemcpyDe
     delete[] colorInvarianceImage;
     delete[] grayscaleImage;
     delete[] UComponentImage;
+    delete[] d_ConvoOutput;
     delete[] histogram;
     delete[] d_GreyScaleMask;
     delete[] d_YUVMask;
@@ -226,6 +228,7 @@ cudaMemcpy(histogram, d_histogram, NUM_BINS * sizeof(unsigned int), cudaMemcpyDe
     cudaFree(d_colorInvarianceImage);
     cudaFree(d_grayscaleImage);
     cudaFree(d_UComponentImage);
+    cudaFree(d_ConvoOutput);
     cudaFree(d_histogram);
     cudaFree(d_GreyScaleMask);
     cudaFree(d_YUVMask);

@@ -1,6 +1,7 @@
 
 
-__global__ void convolution_basic_kernel(float *input, float *Mask, float *output, int Mask_Width, int Width, int Height) 
+
+__global__ void convolution_basic_kernel(unsigned char *input, unsigned char *Mask, unsigned char *output, int Mask_Width, int Width, int Height) 
 {
     //__constant__ float floatConst[15];
 
