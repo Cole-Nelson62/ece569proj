@@ -32,39 +32,26 @@
 
 
 ### set directory for job execution, ~netid = home directory path
-cd ~akoglu/class/ece569/build_dir
+folder_path=~nelso680/ece569/finalproj
+hw_path=$folder_path/build
+testpics_path=$folder_path/testpics
 
+cd $hw_path 
+pwd
+
+mkdir output
+mkdir output/img1
+mkdir output/img2
+mkdir output/img3
+
+im1_path=$hw_path/output/img1
+im2_path=$hw_path/output/img3
+im3_path=$hw_path/output/img3
 ###
 ###setenv MPI_DSM_DISTRIBUTE
 
 ### run your executable program with begin and end date and time output
 date
 ###/usr/bin/time mpirun -np 1 
-./DeviceQuery_Solution > devicequery_output.txt
+./shadowRemoval_Solution $testpics_path/plt4.jpg $im1_path/CI.jpg $im1_path/Grayscale.jpg $im1_path/UComponent.jpg $im1_path/ConvolutionOut.jpg
 date
-
-
-
-hw_path=~nelso680/ece569/Assignment3/build
-
-cd $hw_path
-###
-PATHS[0]=$hw_path/MatrixMultiplication/Dataset/0;
-PATHS[1]=$hw_path/MatrixMultiplication/Dataset/1;
-PATHS[2]=$hw_path/MatrixMultiplication/Dataset/2;
-PATHS[3]=$hw_path/MatrixMultiplication/Dataset/3;
-PATHS[4]=$hw_path/MatrixMultiplication/Dataset/4;
-PATHS[5]=$hw_path/MatrixMultiplication/Dataset/5;
-PATHS[6]=$hw_path/MatrixMultiplication/Dataset/6;
-PATHS[7]=$hw_path/MatrixMultiplication/Dataset/7;
-PATHS[8]=$hw_path/MatrixMultiplication/Dataset/8;
-PATHS[9]=$hw_path/MatrixMultiplication/Dataset/9;
-
-
-count=0
-for i in ${PATHS[@]}
-do
-   file=output$((count)).txt
-   ./BasicMatrixMultiplication_Solution -e $i/output.raw -i $i/input0.raw,$i/input1.raw -t matrix > BasicMatrixMultiplication_output/$file
- count=$((count+1))
-done

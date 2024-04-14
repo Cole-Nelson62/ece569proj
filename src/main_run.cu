@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
     const char* colorInvarianceOutputPath = argv[2];
     const char* grayscaleOutputPath = argv[3];
     const char* UComponentOutputPath = argv[4];
+    const char* ConvoOutputPath = argv[5];
 
     int width, height, channels;
     unsigned char* inputImage = stbi_load(inputImagePath, &width, &height, &channels, 0);
@@ -181,8 +182,8 @@ int main(int argc, char* argv[]) {
 
 
     cudaEventRecord(astopEvent, 0);
-    cudaEventSynchronize(astopEvent);
-    cudaEventElapsedTime(&atotalElapsedTime, astartEvent, astopEvent);
+    cudaEventSynchronize(atotalStopEvent);
+    cudaEventElapsedTime(&atotalElapsedTime, atotalStartEvent, atotalStopEvent);
     printf("\n");
     printf("Total compute time of function after proccess 5 commits(ms) %f \n",aelapsedTime);
     printf("\n");
@@ -202,18 +203,20 @@ cudaMemcpy(histogram, d_histogram, NUM_BINS * sizeof(unsigned int), cudaMemcpyDe
     unsigned char* colorInvarianceImage = new unsigned char[imageSize];
     unsigned char* grayscaleImage = new unsigned char[grayscaleSize];
     unsigned char* UComponentImage = new unsigned char[grayscaleSize];
+    unsigned char* ConvoOutput = new unsigned char[grayscaleSize];
 
     // Copy the converted images back to host
     cudaMemcpy(colorInvarianceImage, d_colorInvarianceImage, imageSize, cudaMemcpyDeviceToHost);
     cudaMemcpy(grayscaleImage, d_grayscaleImage, grayscaleSize, cudaMemcpyDeviceToHost);
     cudaMemcpy(UComponentImage, d_UComponentImage, grayscaleSize, cudaMemcpyDeviceToHost);
-    
+    cudaMemcpy(ConvoOutput, d_ConvoOutput, grayscaleSize, cudaMemcpyDeviceToHost);
 
 
     // Save the output images
     stbi_write_jpg(colorInvarianceOutputPath, width, height, 3, colorInvarianceImage, 100);
     stbi_write_jpg(grayscaleOutputPath, width, height, 1, grayscaleImage, 100);
     stbi_write_jpg(UComponentOutputPath, width, height, 1, UComponentImage, 100);
+    stbi_write_jpg(ConvoOutputPath, width, height, 1, ConvoOutput, 100);
 
     // Cleanup
     stbi_image_free(inputImage);
