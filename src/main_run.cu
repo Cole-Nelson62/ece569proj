@@ -74,7 +74,7 @@ int numBlocks = (width * height + threadsPerBlock - 1) / threadsPerBlock;
 
 // Launch histogram kernel for grayscale image
 computeHistogram<<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_grayscaleImage, d_histogram, width * height);
-calculateOtsuThreshold <<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_histogram,imageSize,d_greyscalethreshold);
+//calculateOtsuThreshold <<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_histogram,imageSize,d_greyscalethreshold);
 // Launch histogram kernel for yuv image
 computeHistogram<<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_UComponentImage, d_histogram, width * height);
 
