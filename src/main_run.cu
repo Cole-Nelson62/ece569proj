@@ -46,6 +46,7 @@ int main(int argc, char* argv[]) {
     int grayscaleSize = width * height;
 
     unsigned char *d_inputImage, *d_colorInvarianceImage, *d_grayscaleImage, *d_UComponentImage, *d_GreyScaleMask,*d_YUVMask;
+    unsigned char *d_greyscalethreshold, *d_yuvthreshold;
     cudaMalloc((void**)&d_inputImage, imageSize * sizeof(unsigned char));
     cudaMalloc((void**)&d_colorInvarianceImage, imageSize * sizeof(unsigned char)); // 3 channels
     cudaMalloc((void**)&d_grayscaleImage, grayscaleSize * sizeof(unsigned char)); // Single channel
@@ -73,6 +74,10 @@ int numBlocks = (width * height + threadsPerBlock - 1) / threadsPerBlock;
 
 // Launch histogram kernel for grayscale image
 computeHistogram<<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_grayscaleImage, d_histogram, width * height);
+calculateOtsuThreshold <<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_histogram,imageSize,d_greyscalethreshold);
+// Launch histogram kernel for yuv image
+computeHistogram<<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_UComponentImage, d_histogram, width * height);
+
 
 // Configure Erosion Kernel
     // Allocate memory for input image (We will take the gray mask)

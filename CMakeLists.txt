@@ -147,13 +147,13 @@ macro(add_lab NAME)
 	endif (BUILD_DESCRIPTION)
 endmacro(add_lab)
 
-include_directories(${PROJECT_SOURCE_DIR}/libwb)
+include_directories(${PROJECT_SOURCE_DIR}/src/libwb)
 
 if (BUILD_LIBWB_LIBRARY)
-  include(libwb/sources.cmake)
+  include(src/libwb/sources.cmake)
   cuda_add_library(${WBLIB} ${LIBWB_SOURCE_FILES} STATIC)
   set_property(TARGET ${WBLIB} PROPERTY CXX_STANDARD 11)
 endif (BUILD_LIBWB_LIBRARY)
 
 
-include(hw1/sources.cmake)
+include(src/sources.cmake)
