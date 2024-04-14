@@ -40,14 +40,19 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+
+    int Mask_Width =  5;
     int imageSize = width * height * channels;
     int grayscaleSize = width * height;
 
-    unsigned char *d_inputImage, *d_colorInvarianceImage, *d_grayscaleImage, *d_UComponentImage;
+    unsigned char *d_inputImage, *d_colorInvarianceImage, *d_grayscaleImage, *d_UComponentImage, *d_GreyScaleMask,*d_YUVMask;
     cudaMalloc((void**)&d_inputImage, imageSize * sizeof(unsigned char));
     cudaMalloc((void**)&d_colorInvarianceImage, imageSize * sizeof(unsigned char)); // 3 channels
     cudaMalloc((void**)&d_grayscaleImage, grayscaleSize * sizeof(unsigned char)); // Single channel
     cudaMalloc((void**)&d_UComponentImage, grayscaleSize * sizeof(unsigned char)); // U component
+
+    cudaMalloc((void**)&d_GreyScaleMask, grayscaleSize * sizeof(unsigned char)); // greymask 
+    cudaMalloc((void**)&d_YUVMask, grayscaleSize * sizeof(unsigned char)); // YUV Mask
 
     cudaMemcpy(d_inputImage, inputImage, imageSize, cudaMemcpyHostToDevice);
 
@@ -82,7 +87,7 @@ computeHistogram<<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>
     dim3 erodeBlock(32, 32);
     dim3 erodeGrid(ceil((float)width/erodeBlock.x), ceil((float)height / erodeBlock.y));
 
-    Erosion<<<erodeGrid, erodeBlock>>>(MASK, d_erodedMaskShadow, width, height, 2);
+    Erosion<<<erodeGrid, erodeBlock>>>(d_GreyScaleMask, d_erodedMaskShadow, width, height, 2);
     //finish erases
 
 
@@ -117,11 +122,15 @@ cudaMemcpy(histogram, d_histogram, NUM_BINS * sizeof(unsigned int), cudaMemcpyDe
     delete[] grayscaleImage;
     delete[] UComponentImage;
     delete[] histogram;
+    delete[] d_GreyScaleMask;
+    delete[] d_YUVMask;
     cudaFree(d_inputImage);
     cudaFree(d_colorInvarianceImage);
     cudaFree(d_grayscaleImage);
     cudaFree(d_UComponentImage);
     cudaFree(d_histogram);
+    cudaFree(d_GreyScaleMask);
+    cudaFree(d_YUVMask);
 
 
     return 0;
