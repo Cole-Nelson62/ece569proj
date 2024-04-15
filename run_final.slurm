@@ -37,7 +37,6 @@ hw_path=$folder_path/build
 testpics_path=$folder_path/testpics
 
 cd $hw_path 
-pwd
 
 mkdir output
 mkdir output/img1
