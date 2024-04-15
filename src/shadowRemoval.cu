@@ -62,7 +62,63 @@ __global__ void computeHistogram(unsigned char* imageData, unsigned int* histogr
         atomicAdd(&histogram[tid], tempHistogram[tid]);
     }
 }
+__global__ void computeCumulativeSum(unsigned int* probHistogram, unsigned int* cumulativeHistogram, int numBins) {
+    extern __shared__ unsigned int cumSmem[];  // Unique name for shared memory
 
+    int t = threadIdx.x;
+    int p = t;
+    int q = t + numBins / 2;
+
+    if (p < numBins) {
+        cumSmem[p] = probHistogram[p];
+    }
+    if (q < numBins) {
+        cumSmem[q] = probHistogram[q];
+    }
+
+    __syncthreads();
+
+    int offset = 1;
+    for (int d = numBins >> 1; d > 0; d >>= 1) {
+        __syncthreads();
+        if (t < d) {
+            p = offset * (2 * t + 1) - 1;
+            q = offset * (2 * t + 2) - 1;
+            cumSmem[q] = cumSmem[q] + cumSmem[p];
+        }
+        offset *= 2;
+    }
+
+    __syncthreads();
+
+    if (t == 0) {
+        cumulativeHistogram[numBins - 1] = cumSmem[numBins - 1];
+        cumSmem[numBins - 1] = 0;
+    }
+
+    __syncthreads();
+
+    for (int d = 1; d < numBins; d *= 2) {
+        offset >>= 1;
+        __syncthreads();
+        if (t < d) {
+            p = offset * (2 * t + 1) - 1;
+            q = offset * (2 * t + 2) - 1;
+            unsigned int temp = cumSmem[p];
+            cumSmem[p] = cumSmem[q];
+            cumSmem[q] += temp;
+        }
+    }
+
+    __syncthreads();
+
+    if (p < numBins) {
+        cumulativeHistogram[p] = cumSmem[p];
+    }
+    if (q < numBins - 1) {
+        cumulativeHistogram[q] = cumSmem[q];
+    }
+}
 __global__ void computeClassVariances(){
 // to compute interclass variance 
 }
