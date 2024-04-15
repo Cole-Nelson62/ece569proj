@@ -3,6 +3,7 @@ ECE 569 final project
 
 mkdir build
 cp -r testpics build
+mv run_final.slurm build/.
 
 $module load cuda11/11.0
 $CC=gcc cmake3 ../.
