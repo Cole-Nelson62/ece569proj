@@ -62,17 +62,117 @@ __global__ void computeHistogram(unsigned char* imageData, unsigned int* histogr
         atomicAdd(&histogram[tid], tempHistogram[tid]);
     }
 }
+__global__ void computeCumulativeSum(unsigned int* probHistogram, unsigned int* cumulativeHistogram, int numBins) {
+    extern __shared__ unsigned int cumSmem[];  // Unique name for shared memory
 
+    int t = threadIdx.x;
+    int p = t;
+    int q = t + numBins / 2;
+
+    if (p < numBins) {
+        cumSmem[p] = probHistogram[p];
+    }
+    if (q < numBins) {
+        cumSmem[q] = probHistogram[q];
+    }
+
+    __syncthreads();
+
+    int offset = 1;
+    for (int d = numBins >> 1; d > 0; d >>= 1) {
+        __syncthreads();
+        if (t < d) {
+            p = offset * (2 * t + 1) - 1;
+            q = offset * (2 * t + 2) - 1;
+            cumSmem[q] = cumSmem[q] + cumSmem[p];
+        }
+        offset *= 2;
+    }
+
+    __syncthreads();
+
+    if (t == 0) {
+        cumulativeHistogram[numBins - 1] = cumSmem[numBins - 1];
+        cumSmem[numBins - 1] = 0;
+    }
+
+    __syncthreads();
+
+    for (int d = 1; d < numBins; d *= 2) {
+        offset >>= 1;
+        __syncthreads();
+        if (t < d) {
+            p = offset * (2 * t + 1) - 1;
+            q = offset * (2 * t + 2) - 1;
+            unsigned int temp = cumSmem[p];
+            cumSmem[p] = cumSmem[q];
+            cumSmem[q] += temp;
+        }
+    }
+
+    __syncthreads();
+
+    if (p < numBins) {
+        cumulativeHistogram[p] = cumSmem[p];
+    }
+    if (q < numBins - 1) {
+        cumulativeHistogram[q] = cumSmem[q];
+    }
+}
 __global__ void computeClassVariances(){
 // to compute interclass variance 
 }
-__global__ void findOtsuThresholding(){
-// to find the thresh hold for binarize image 
+__global__ void findOtsuThresholding(float* cumSum0, float* cumSum1, int* threshold, int numBins) {
+    extern __shared__ float smem[];
+
+    int t = threadIdx.x;
+    float* smem0 = smem;
+    float* smem1 = smem + numBins;
+    float* smemValue = smem + 2 * numBins;
+    int* smemIndex = (int*)(smem + 3 * numBins);
+
+    if (t < numBins) {
+        smem0[t] = cumSum0[t];
+        smem1[t] = cumSum1[t];
+        smemValue[t] = 0.0f; // Initialize to zero
+        smemIndex[t] = t; // Initialize indices
+    }
+    __syncthreads();
+
+    if (t < numBins) {
+        float numerator = pow((smem1[numBins - 1] * smem0[t] - smem1[t]), 2);
+        float denominator = smem0[t] * (1 - smem0[t]) + EPSILON;
+        smemValue[t] = numerator / denominator;
+    }
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (t < s && t + s < numBins) {
+            if (smemValue[t + s] > smemValue[t]) {
+                smemValue[t] = smemValue[t + s];
+                smemIndex[t] = smemIndex[t + s];
+            }
+        }
+        __syncthreads();
+    }
+
+    if (t == 0) {
+        *threshold = smemIndex[0];
+    }
+}
+
+__global__ void applyThreshold(const unsigned char* imageData, unsigned char* binaryImage, int imageSize, unsigned char threshold) {
+    int t = threadIdx.x + blockIdx.x * blockDim.x;
+    int s = blockDim.x * gridDim.x;
+
+    while (t < imageSize) {
+        binaryImage[t] = (imageData[t] >= threshold) ? 255 : 0;
+        t += s;
+    }
 }
 __global__ void binarizeImage(){
 // applying threshold to get the final binaty image
 }
-
 __global__ void calculateOtsuThreshold(unsigned char* histogram, int imageSize, unsigned char* threshold) {
     /*
     __shared__ float cache[256];
