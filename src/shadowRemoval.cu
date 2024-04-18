@@ -183,7 +183,7 @@ __global__ void findOtsuThresholding(float *cumulativeSum0, float *cumulativeSum
     }
 }
 
-__global__ void applyThreshold(const unsigned char* imageData, unsigned char* binaryImage, int imageSize, unsigned char threshold) {
+__global__ void applyThreshold(const unsigned char* imageData, unsigned char* binaryImage, int imageSize, int threshold) {
     int t = threadIdx.x + blockIdx.x * blockDim.x;
     int s = blockDim.x * gridDim.x;
 
