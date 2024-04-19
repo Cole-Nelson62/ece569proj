@@ -29,7 +29,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line,
 
 int main(int argc, char* argv[]) {
     if (argc < 11) {
-        std::cerr << "Usage: " << argv[0] << " <inputImagePath> <grayscaleOutputPath> <UComponentOutputPath> <ConvoOutputPath> <ErodedLightOutputPath> <ErodedShadowOutputPath> <FinalOutputPath> <grayMaskOuputPath> <YUVMaskOuputPath>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <inputImagePath> <colorInvarianceOutputPath> <grayscaleOutputPath> <UComponentOutputPath> <ConvoOutputPath> <ErodedLightOutputPath> <ErodedShadowOutputPath> <FinalOutputPath> <grayMaskOuputPath> <YUVMaskOuputPath>" << std::endl;
         return -1;
     }
     const char* inputImagePath = argv[1];
