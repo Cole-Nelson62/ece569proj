@@ -28,11 +28,20 @@ inline void gpuAssert(cudaError_t code, const char *file, int line,
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 9) {
-        std::cerr << "Usage: " << argv[0] << " <inputImagePath> <grayMaskOuputPath> <YUVMaskOuputPath> <grayscaleOutputPath> <UComponentOutputPath>" << std::endl;
+    if (argc < 11) {
+        std::cerr << "Usage: " << argv[0] << " <inputImagePath>  <grayscaleOutputPath> <UComponentOutputPath> <ConvoOutputPath> <ErodedLightOutputPath> <ErodedShadowOutputPath> <FinalOutputPath> <grayMaskOuputPath> <YUVMaskOuputPath>" << std::endl;
         return -1;
     }
-
+    const char* inputImagePath = argv[1];
+    const char* colorInvarianceOutputPath = argv[2];
+    const char* grayscaleOutputPath = argv[3];
+    const char* UComponentOutputPath = argv[4];
+    const char* ConvoOutputPath = argv[5];
+    const char* ErodedLightOutputPath = argv[6];
+    const char* ErodedShadowOutputPath  = argv[7];
+    const char* FinalOutputPath = argv[8];
+    const char* grayMaskOuputPath = argv[9];
+    const char* YUVMaskOuputPath = argv[10];
     // For calculating proccesses
     cudaEvent_t astartEvent, astopEvent;
     float aelapsedTime;
@@ -45,7 +54,7 @@ int main(int argc, char* argv[]) {
     cudaEventCreate(&atotalStartEvent);
     cudaEventCreate(&atotalStopEvent);
 
-
+/*
     const char* inputImagePath = argv[1];
     const char* colorInvarianceOutputPath = argv[4];
     const char* grayscaleOutputPath = argv[5];
@@ -56,7 +65,7 @@ int main(int argc, char* argv[]) {
     const char* FinalOutputPath = argv[10];
     const char* grayMaskOuputPath = argv[11];
 	const char* YUVMaskOuputPath = argv[12];
- 
+*/ 
 
     int width, height, channels;
     unsigned char* inputImage = stbi_load(inputImagePath, &width, &height, &channels, 0);
