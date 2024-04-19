@@ -52,7 +52,7 @@ im3_path=$hw_path/output/img3
 ### run your executable program with begin and end date and time output
 date
 ###/usr/bin/time mpirun -np 1 
-./shadowRemoval_Solution $testpics_path/plt4.jpg $im1_path/CI.jpg $im1_path/Grayscale.jpg $im1_path/UComponent.jpg $im1_path/ConvolutionOut.jpg $im1_path/ErodedLight.jpg $im1_path/ErodedShadow.jpg $im1_path/ShadowRemoved.jpg
+./shadowRemoval_Solution $testpics_path/plt4.jpg $im1_path/CI.jpg $im1_path/Grayscale.jpg $im1_path/UComponent.jpg $im1_path/ConvolutionOut.jpg $im1_path/ErodedLight.jpg $im1_path/ErodedShadow.jpg $im1_path/ShadowRemoved.jpg $im1_path/GreyMask.jpg $im1_path/YUVMASk.jpg
 #./shadowRemoval_Solution $testpics_path/4kImage.jpg $im2_path/CI.jpg $im2_path/Grayscale.jpg $im2_path/UComponent.jpg $im2_path/ConvolutionOut.jpg $im2_path/ErodedLight.jpg $im2_path/ErodedShadow.jpg $im2_path/ShadowRemoved.jpg
 #./shadowRemoval_Solution $testpics_path/1020Image.jpg $im3_path/CI.jpg $im3_path/Grayscale.jpg $im3_path/UComponent.jpg $im3_path/ConvolutionOut.jpg $im3_path/ErodedLight.jpg $im3_path/ErodedShadow.jpg $im3_path/ShadowRemoved.jpg
 

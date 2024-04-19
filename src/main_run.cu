@@ -11,6 +11,8 @@
 #include "ConvolutionKernal.cu"
 #include "Erosion.cu"
 #include <wb.h>
+#include "utils.h"
+
 
 
 #define CUDA_CHECK(ans)                                                   \
@@ -26,7 +28,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line,
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 4) {
+    if (argc < 9) {
         std::cerr << "Usage: " << argv[0] << " <inputImagePath> <grayMaskOuputPath> <YUVMaskOuputPath> <grayscaleOutputPath> <UComponentOutputPath>" << std::endl;
         return -1;
     }
@@ -45,9 +47,6 @@ int main(int argc, char* argv[]) {
 
 
     const char* inputImagePath = argv[1];
-	const char* grayMaskOuputPath = argv[2];
-	const char* YUVMaskOuputPath = argv[3];
-
     const char* colorInvarianceOutputPath = argv[4];
     const char* grayscaleOutputPath = argv[5];
     const char* UComponentOutputPath = argv[6];
@@ -55,6 +54,8 @@ int main(int argc, char* argv[]) {
     const char* ErodedLightOutputPath = argv[8];
     const char* ErodedShadowOutputPath  = argv[9];
     const char* FinalOutputPath = argv[10];
+    const char* grayMaskOuputPath = argv[11];
+	const char* YUVMaskOuputPath = argv[12];
  
 
     int width, height, channels;
@@ -173,6 +174,7 @@ int main(int argc, char* argv[]) {
 	applyThreshold<<<blocksPerGrid, threadsPerBlock>>>(d_UComponentImage, d_YUVMask, grayscaleSize, 100); // *d_thresholdYUV);
 
 /////////////////////////For Testing/////////////////////////////////////////////////////////////////////
+/*
 int h_thresholdGray;	
 	cudaMemcpy(&h_thresholdGray, d_thresholdGray, sizeof(int), cudaMemcpyDeviceToHost);
 	printf("\n");
@@ -197,6 +199,7 @@ int h_thresholdYUV;
     stbi_write_jpg(grayMaskOuputPath, width, height, 1, h_GreyScaleMask, 100);
 
     stbi_write_jpg(YUVMaskOuputPath, width, height, 1, h_YUVMask, 100);
+    */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     cudaEventRecord(astopEvent, 0);
@@ -213,7 +216,10 @@ int h_thresholdYUV;
 // for proccess 3 convolution
     cudaEventRecord(astartEvent, 0);
     Mask_Width =  11;
-    convolution_basic_kernel<<<gridDim, blockDim>>>(d_UComponentImage, d_YUVMask, d_ConvoOutput, Mask_Width, width, height) ;
+    dim3 blockDimC(TILE_WIDTH, TILE_WIDTH);
+    dim3 gridDimC((width + blockDimC.x - 1) / blockDimC.x, (height + blockDimC.y - 1) / blockDimC.y);
+    //convolution_basic_kernel<<<gridDimC, blockDimC>>>(d_UComponentImage, d_YUVMask, d_ConvoOutput, Mask_Width, width, height) ;
+    convolution_Shared_Mem<<<gridDimC, blockDimC>>>(d_UComponentImage, d_YUVMask, d_ConvoOutput, Mask_Width, width, height) ;
 
     cudaEventRecord(astopEvent, 0);
     cudaEventSynchronize(astopEvent);
@@ -286,8 +292,8 @@ cudaMemcpy(histogram, d_histogramGrayscale, NUM_BINS * sizeof(unsigned int), cud
     unsigned char* ErodedLight = new unsigned char[grayscaleSize];
     unsigned char* ErodedShadow = new unsigned char[grayscaleSize];
     unsigned char* Final = new unsigned char[imageSize];
-
-
+    unsigned char *h_GreyScaleMask = (unsigned char *)malloc(width * height * sizeof(unsigned char));
+    unsigned char *h_YUVMask = (unsigned char *)malloc(width * height * sizeof(unsigned char));
 
 
     // Copy the converted images back to host
@@ -298,9 +304,9 @@ cudaMemcpy(histogram, d_histogramGrayscale, NUM_BINS * sizeof(unsigned int), cud
 
     cudaMemcpy(ErodedLight, d_erodedMaskShadow, grayscaleSize, cudaMemcpyDeviceToHost);
     cudaMemcpy(ErodedShadow, d_erodedMaskLight, grayscaleSize, cudaMemcpyDeviceToHost);
-    //cudaMemcpy(Final, d_ConvoOutput, imageSize, cudaMemcpyDeviceToHost);
-
-
+    cudaMemcpy(Final, d_ConvoOutput, imageSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_YUVMask, d_YUVMask, width * height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_GreyScaleMask, d_GreyScaleMask, width * height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
     // Save the output images
     stbi_write_jpg(colorInvarianceOutputPath, width, height, 3, colorInvarianceImage, 100);
     stbi_write_jpg(grayscaleOutputPath, width, height, 1, grayscaleImage, 100);
@@ -309,7 +315,10 @@ cudaMemcpy(histogram, d_histogramGrayscale, NUM_BINS * sizeof(unsigned int), cud
 
     stbi_write_jpg(ErodedLightOutputPath, width, height, 1, ErodedLight, 100);
     stbi_write_jpg(ErodedShadowOutputPath, width, height, 1, ErodedShadow, 100);
-    //stbi_write_jpg(FinalOutputPath, width, height, 1, Final, 100);
+    stbi_write_jpg(grayMaskOuputPath, width, height, 1, h_GreyScaleMask, 100);
+
+    stbi_write_jpg(YUVMaskOuputPath, width, height, 1, h_YUVMask, 100);
+    stbi_write_jpg(FinalOutputPath, width, height, 1, Final, 100);
 
 
     // Cleanup
