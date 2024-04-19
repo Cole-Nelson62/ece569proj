@@ -110,22 +110,54 @@ int main(int argc, char* argv[]) {
     printf("Total time for Color transforms Proccess 1 (ms) %f \n",aelapsedTime);
     printf("\n");
 
-
     cudaEventRecord(astartEvent, 0);
-    // Allocate memory for the histogram
-    unsigned int* d_histogram;
-    cudaMalloc((void**)&d_histogram, NUM_BINS * sizeof(unsigned int));
-    cudaMemset(d_histogram, 0, NUM_BINS * sizeof(unsigned int));
 
-    // Configure kernel launch parameters
-    int threadsPerBlock = 256;  // This is a typical choice; adjust based on GPU
-    int numBlocks = (width * height + threadsPerBlock - 1) / threadsPerBlock;
+   // Launch the computeCummulativeSum kernel
+	float *d_cumuSum0Gray, *d_cumuSum1Gray, *d_cumuSum0YUV, *d_cumuSum1YUV;
+	cudaMalloc((void **)&d_cumuSum0Gray, NUM_BINS * sizeof(float));
+	cudaMemset(d_cumuSum0Gray, 0, NUM_BINS * sizeof(float));
+	cudaMalloc((void **)&d_cumuSum1Gray, NUM_BINS * sizeof(float));
+	cudaMemset(d_cumuSum1Gray, 0, NUM_BINS * sizeof(float));
 
-    // Launch histogram kernel for grayscale image
-    computeHistogram<<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_grayscaleImage, d_histogram, width * height);
-    //calculateOtsuThreshold <<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_histogram,imageSize,d_greyscalethreshold);
-    // Launch histogram kernel for yuv image
-    computeHistogram<<<numBlocks, threadsPerBlock, NUM_BINS * sizeof(unsigned int)>>>(d_UComponentImage, d_histogram, width * height);
+	cudaMalloc((void **)&d_cumuSum0YUV, NUM_BINS * sizeof(float));
+	cudaMemset(d_cumuSum0YUV, 0, NUM_BINS * sizeof(float));
+	cudaMalloc((void **)&d_cumuSum1YUV, NUM_BINS * sizeof(float));
+	cudaMemset(d_cumuSum1YUV, 0, NUM_BINS * sizeof(float));
+	//For grayscale image
+	computeCumulativeSum<<<1, threadsPerBlock/2, NUM_BINS * sizeof(float)>>>(d_histogramGrayscale, width * height, d_cumuSum0Gray, d_cumuSum1Gray);
+ 	cudaDeviceSynchronize();
+	//For YUV image
+	computeCumulativeSum<<<1, threadsPerBlock/2, NUM_BINS * sizeof(float)>>>(d_histogramYUV, width * height, d_cumuSum0YUV, d_cumuSum1YUV);
+ 	cudaDeviceSynchronize();
+
+	//Launch findOtsuThresholding kernel
+	int *d_thresholdGray;
+	int *d_thresholdYUV;
+    cudaMalloc(&d_thresholdGray, sizeof(int));
+    cudaMemset(d_thresholdGray, 0, sizeof(int));
+	cudaMalloc(&d_thresholdYUV, sizeof(int));
+    cudaMemset(d_thresholdYUV, 0, sizeof(int));
+	int sharedMemorySize = 3 * NUM_BINS * sizeof(float) + NUM_BINS * sizeof(int);
+	//For grayscale image
+	findOtsuThresholding<<<1, threadsPerBlock, sharedMemorySize>>>(d_cumuSum0Gray, d_cumuSum1Gray, d_thresholdGray);
+ 	cudaDeviceSynchronize();
+	//For YUV image
+	findOtsuThresholding<<<1, threadsPerBlock, sharedMemorySize>>>(d_cumuSum0YUV, d_cumuSum1YUV, d_thresholdYUV);
+ 	cudaDeviceSynchronize();
+	// Copy back the results to host to check them
+	
+	
+
+
+	//Launching applyThreshold kernel to get Mask Image	
+    cudaMemset(d_GreyScaleMask, 0, grayscaleSize * sizeof(unsigned char));
+	cudaMemset(d_YUVMask, 0, grayscaleSize * sizeof(unsigned char));
+    int blocksPerGrid = (grayscaleSize + threadsPerBlock - 1) / threadsPerBlock;
+	//For gray mask
+	applyThreshold<<<blocksPerGrid, threadsPerBlock>>>(d_grayscaleImage, d_GreyScaleMask, grayscaleSize, 100); // *d_thresholdGray);try constant threshold
+	//For YUV mask
+	applyThreshold<<<blocksPerGrid, threadsPerBlock>>>(d_UComponentImage, d_YUVMask, grayscaleSize, 100); // *d_thresholdYUV);
+
 
     cudaEventRecord(astopEvent, 0);
     cudaEventSynchronize(astopEvent);
@@ -133,6 +165,34 @@ int main(int argc, char* argv[]) {
     printf("\n");
     printf("Total time for Proccess 2 Otsu (ms) %f \n",aelapsedTime);
     printf("\n");
+
+/////////////////////////For Testing/////////////////////////////////////////////////////////////////////
+int h_thresholdGray;	
+	cudaMemcpy(&h_thresholdGray, d_thresholdGray, sizeof(int), cudaMemcpyDeviceToHost);
+	printf("\n");
+    printf("Optimal Threshold: %d\n", h_thresholdGray);
+int h_thresholdYUV;	
+	cudaMemcpy(&h_thresholdYUV, d_thresholdYUV, sizeof(int), cudaMemcpyDeviceToHost);
+	printf("\n");
+    printf("Optimal Threshold: %d\n", h_thresholdGray);
+ unsigned char *h_GreyScaleMask = (unsigned char *)malloc(width * height * sizeof(unsigned char));
+    cudaMemcpy(h_GreyScaleMask, d_GreyScaleMask, width * height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+    printf("Sample of Binary Image:\n");
+ unsigned char *h_YUVMask = (unsigned char *)malloc(width * height * sizeof(unsigned char));
+    cudaMemcpy(h_YUVMask, d_YUVMask, width * height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+    printf("Sample of Binary Image:\n");
+
+    for (int i = 0; i < 1000; ++i) {
+        printf("%d ", h_GreyScaleMask[i]);
+        if ((i + 1) % 25 == 0) printf("\n");
+    }
+    printf("\n");
+
+    stbi_write_jpg(grayMaskOuputPath, width, height, 1, h_GreyScaleMask, 100);
+
+    stbi_write_jpg(YUVMaskOuputPath, width, height, 1, h_YUVMask, 100);
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     // for proccess 3 convolution
     cudaEventRecord(astartEvent, 0);
